@@ -1,0 +1,20 @@
+# Argo CD Application: keep namespace "dev" in sync with the public GitHub repo.
+# CHANGE repoURL: the repo name must contain the login of a team member.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: playground
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/CHANGE_ME/ribenham-iot.git
+    targetRevision: HEAD
+    path: manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

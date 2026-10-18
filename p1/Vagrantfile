@@ -1,0 +1,34 @@
+# P1 - K3s server (controller) + K3s agent (worker), run by Vagrant.
+# CHANGE LOGIN to the 42 login of a team member: machines become "<login>S" / "<login>SW".
+LOGIN = "ribenham"
+BOX = "bento/debian-13" # latest stable Debian
+SERVER_IP = "192.168.56.110"
+WORKER_IP = "192.168.56.111"
+
+Vagrant.configure("2") do |config|
+  config.vm.box = BOX
+  config.vm.synced_folder ".", "/vagrant", type: "virtualbox" # used to hand the node token to the worker
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.cpus = 1
+    vb.memory = 1024
+  end
+
+  config.vm.define "#{LOGIN}S" do |server|
+    server.vm.hostname = "#{LOGIN}S"
+    server.vm.network "private_network", ip: SERVER_IP
+    server.vm.provider "virtualbox" do |vb|
+      vb.name = "#{LOGIN}S"
+    end
+    server.vm.provision "shell", path: "scripts/server.sh", args: [SERVER_IP]
+  end
+
+  config.vm.define "#{LOGIN}SW" do |worker|
+    worker.vm.hostname = "#{LOGIN}SW"
+    worker.vm.network "private_network", ip: WORKER_IP
+    worker.vm.provider "virtualbox" do |vb|
+      vb.name = "#{LOGIN}SW"
+    end
+    worker.vm.provision "shell", path: "scripts/worker.sh", args: [SERVER_IP, WORKER_IP]
+  end
+end
