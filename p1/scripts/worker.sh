@@ -3,8 +3,12 @@
 WORKER_IP="192.168.56.111"
 SERVER_IP="192.168.56.110"
 
-IFACE="$(ip -o -4 a | grep ${WORKER_IP} | awk '{print $2}')"
+IFACE=$(ip -o -4 a | grep ${WORKER_IP} | awk '{print $2}')
 
 TOKEN=$(cat /vagrant/node-token)
 
-curl -sfL https://get.k3s.io | K3S_URL=https://192.168.56.110:6443 K3S_TOKEN="${TOKEN}" sh -s - --flannel-iface=${IFACE} --node-ip=${WORKER_IP} 
+curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="agent" sh -s - \
+  --node-ip ${WORKER_IP} \
+  --flannel-iface ${IFACE} \
+  --server https://${SERVER_IP}:6443 \
+  --token ${TOKEN}

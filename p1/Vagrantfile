@@ -7,20 +7,24 @@ Vagrant.configure("2") do |config|
   config.vm.box = BOX
   config.vm.synced_folder "./confs", "/vagrant"
 
-  config.vm.provider "virtualbox" do |vb|
-    # vb.gui = true
-    vb.cpus = 2
-    vb.memory = 2048
-  end
-
   config.vm.define "#{LOGIN}S" do |server|
     server.vm.hostname = "#{LOGIN}S"
+    server.vm.provider "virtualbox" do |vb|
+      vb.name = "#{LOGIN}S" 
+      vb.memory = 2048
+      vb.cpus = 2
+    end
     server.vm.network "private_network", ip: SERVER_IP
     server.vm.provision "shell", path: "scripts/server.sh"
   end
 
   config.vm.define "#{LOGIN}SW" do |worker|
     worker.vm.hostname = "#{LOGIN}SW"
+    worker.vm.provider "virtualbox" do |vb|
+      vb.name = "#{LOGIN}SW" 
+      vb.memory = 1024
+      vb.cpus = 1
+    end
     worker.vm.network "private_network", ip: WORKER_IP
     worker.vm.provision "shell", path: "scripts/worker.sh"
   end
