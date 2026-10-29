@@ -1,16 +1,15 @@
-# Three apps (hello-kubernetes prints its message, pod name and node). app-two runs 3 replicas.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app-one
-  labels: {app: app-one}
+  name: app1-deployment
+
 spec:
   replicas: 1
   selector:
-    matchLabels: {app: app-one}
+    matchLabels: {app: app1}
   template:
     metadata:
-      labels: {app: app-one}
+      labels: {app: app1}
     spec:
       containers:
         - name: app
@@ -23,24 +22,24 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: app-one
+  name: app1-service
 spec:
-  selector: {app: app-one}
+  selector: {app: app1}
   ports:
     - {port: 80, targetPort: 8080}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app-two
-  labels: {app: app-two}
+  name: app2-deployment
+
 spec:
   replicas: 3
   selector:
-    matchLabels: {app: app-two}
+    matchLabels: {app: app2}
   template:
     metadata:
-      labels: {app: app-two}
+      labels: {app: app2}
     spec:
       containers:
         - name: app
@@ -53,24 +52,24 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: app-two
+  name: app2-service
 spec:
-  selector: {app: app-two}
+  selector: {app: app2}
   ports:
     - {port: 80, targetPort: 8080}
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app-three
-  labels: {app: app-three}
+  name: app3-deployment
+
 spec:
   replicas: 1
   selector:
-    matchLabels: {app: app-three}
+    matchLabels: {app: app3}
   template:
     metadata:
-      labels: {app: app-three}
+      labels: {app: app3}
     spec:
       containers:
         - name: app
@@ -83,8 +82,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: app-three
+  name: app3-service
 spec:
-  selector: {app: app-three}
+  selector: {app: app3}
   ports:
     - {port: 80, targetPort: 8080}

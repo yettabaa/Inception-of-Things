@@ -1,21 +1,19 @@
-# P2 - one VM, K3s in server mode, three web apps behind the Traefik Ingress.
-# CHANGE LOGIN to the 42 login of a team member: the machine is named "<login>S".
-LOGIN = "ribenham"
-BOX = "bento/debian-13" # latest stable Debian
+LOGIN = "yettabaa"
+BOX = "ubuntu/jammy64"
 SERVER_IP = "192.168.56.110"
 
 Vagrant.configure("2") do |config|
   config.vm.box = BOX
-  config.vm.synced_folder "confs", "/vagrant/confs", type: "virtualbox"
+  config.vm.synced_folder "./confs", "/confs"
 
   config.vm.define "#{LOGIN}S" do |server|
     server.vm.hostname = "#{LOGIN}S"
     server.vm.network "private_network", ip: SERVER_IP
     server.vm.provider "virtualbox" do |vb|
       vb.name = "#{LOGIN}S"
-      vb.cpus = 1
-      vb.memory = 1024
+      vb.cpus = 2
+      vb.memory = 2048
     end
-    server.vm.provision "shell", path: "scripts/server.sh", args: [SERVER_IP]
+    server.vm.provision "shell", path: "scripts/server.sh"
   end
 end
