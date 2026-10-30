@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Create the K3d cluster, install Argo CD (namespace argocd), create namespace dev,
-# and register the Argo CD Application that syncs the GitHub repo into dev.
+
 set -euo pipefail
 
 CLUSTER="${CLUSTER:-iot}"

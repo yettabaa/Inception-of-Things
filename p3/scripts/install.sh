@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Install every tool P3 needs on a fresh Debian/Ubuntu VM: Docker, kubectl, k3d, argocd CLI.
-# Run as a normal user with sudo rights:  ./install.sh
+
 set -euo pipefail
 
 K3D_VERSION="${K3D_VERSION:-v5.9.0}"
