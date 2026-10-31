@@ -1,15 +1,14 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: playground
+  name: p3-application
   namespace: argocd
 spec:
   project: default
   source:
-    # Points to the local GitLab repo (cluster-internal service URL)
-    repoURL: http://gitlab-webservice-default.gitlab.svc.cluster.local:8080/root/playground.git
-    targetRevision: main
-    path: .
+    repoURL: https://gitlab.10.32.66.207.nip.io/root/REPO_NAME
+    targetRevision: HEAD
+    path: . 
   destination:
     server: https://kubernetes.default.svc
     namespace: dev
@@ -17,4 +16,5 @@ spec:
     automated:
       prune: true
       selfHeal: true
-
+    syncOptions:
+      - CreateNamespace=true

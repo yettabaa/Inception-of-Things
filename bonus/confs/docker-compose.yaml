@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASS}
+    volumes:
+      - postgres_v:/var/lib/postgresql
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+
+
+  redis:
+    image: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_v:/data
+    command: >
+      redis-server
+      --user default off
+      --user ${REDIS_USER} on '>${REDIS_PASS}' ~* +@all
+
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    networks:
+      - minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASS}
+    volumes:
+      - minio_v:/data
+    command: server /data --console-address ":9001"
+  minio-bucket-creation:
+    container_name: minio-bucket-creation
+    image: cgr.dev/chainguard/minio-client:latest-dev
+    networks:
+      - minio
+    depends_on:
+      - minio
+    environment:
+      MINIO_USER: ${MINIO_USER}
+      MINIO_PASS: ${MINIO_PASS}
+    entrypoint: >
+      /bin/sh -c '
+      sleep 5;
+      until /usr/bin/mc alias set localminio http://minio:9000 $MINIO_USER $MINIO_PASS; do sleep 2; done;
+      for bucket in git-lfs gitlab-agent-plan-content gitlab-artifacts gitlab-backups
+      gitlab-ci-secure-files gitlab-dependency-proxy gitlab-mr-diffs
+      gitlab-packages gitlab-pages gitlab-terraform-state gitlab-uploads
+      registry runner-cache tmp; do
+      /usr/bin/mc mb --ignore-existing localminio/$$bucket;
+      done;
+      '
+
+volumes:
+  postgres_v:
+  redis_v:
+  minio_v:
+
+networks:
+  minio:

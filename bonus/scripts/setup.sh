@@ -1,116 +1,69 @@
 #!/usr/bin/env bash
-# Bonus setup: k3d cluster + ArgoCD + GitLab (helm) + app via local GitLab
 
 set -euo pipefail
 
-CLUSTER="${CLUSTER:-iot-bonus}"
-CONFS="$(cd "$(dirname "$0")/../confs" && pwd)"
-GITLAB_NS="gitlab"
-ARGOCD_NS="argocd"
-DEV_NS="dev"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+CONF_DIR="$(cd -- "$SCRIPT_DIR/../confs" && pwd)"
+ENV_FILE="${ENV_FILE:-$CONF_DIR/.env}"
 
-# ── 1. Cluster ────────────────────────────────────────────────────────────────
-if ! k3d cluster list "${CLUSTER}" >/dev/null 2>&1; then
-  k3d cluster create "${CLUSTER}" -p "8888:80@loadbalancer" --wait
+if [[ ! -f "$ENV_FILE" ]]; then
+    ENV_FILE="$CONF_DIR/example.env"
 fi
 
-# ── 2. Namespaces ─────────────────────────────────────────────────────────────
-for ns in "${ARGOCD_NS}" "${DEV_NS}" "${GITLAB_NS}"; do
-  kubectl create namespace "${ns}" --dry-run=client -o yaml | kubectl apply -f -
-done
+set -a
+# shellcheck disable=SC1090
+source "$ENV_FILE"
+set +a
 
-# ── 3. ArgoCD ─────────────────────────────────────────────────────────────────
-kubectl apply -n "${ARGOCD_NS}" --server-side --force-conflicts \
-  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-kubectl -n "${ARGOCD_NS}" rollout status deployment/argocd-server                       --timeout=300s
-kubectl -n "${ARGOCD_NS}" rollout status deployment/argocd-repo-server                  --timeout=300s
-kubectl -n "${ARGOCD_NS}" rollout status deployment/argocd-applicationset-controller    --timeout=300s
+BS_ARGOCD_CONFS="$CONF_DIR/argo-app.yaml"
+BS_NS_ARGOCD="argocd"
+BS_NS_DEV="dev"
+BS_NS_GITLAB="gitlab"
+BS_CLUSTER="bonus"
+ARGOCD_YAML="https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
 
-# ── 4. GitLab (helm) ──────────────────────────────────────────────────────────
-helm repo add gitlab https://charts.gitlab.io/ 2>/dev/null || true
-helm repo update gitlab
+echo "cleaning up old evironments..."
+k3d cluster delete $BS_CLUSTER 2>/dev/null
 
-helm upgrade --install gitlab gitlab/gitlab \
-  --namespace "${GITLAB_NS}" \
-  --version 7.11.10 \
-  --timeout 1200s \
-  --wait=false \
-  -f "${CONFS}/gitlab-values.yaml"
+echo "creating k3s cluster $BS_CLUSTER..."
+k3d cluster create $BS_CLUSTER -p 8888:80@loadbalancer -p 443:443@loadbalancer -p 80:80@loadbalancer -p 222:22@loadbalancer
 
-# ── 5. Retrieve GitLab root password ──────────────────────────────────────────
-GITLAB_PASSWORD="$(kubectl -n "${GITLAB_NS}" get secret gitlab-gitlab-initial-root-password \
-  -o jsonpath='{.data.password}' | base64 -d)"
+cd "$CONF_DIR"
+docker-compose down -v
+docker-compose up -d
 
-# ── 6. Bootstrap GitLab repo via the API ─────────────────────────────────────
-# Port-forward GitLab webservice so we can reach the API from this host
-kubectl -n "${GITLAB_NS}" port-forward svc/gitlab-webservice-default 8929:8080 &
-PF_PID=$!
-trap 'kill ${PF_PID} 2>/dev/null || true' EXIT
-sleep 10   # wait for port-forward to be ready
+echo "creating namespaces $BS_NS_ARGOCD, $BS_NS_DEV, $BS_NS_GITLAB..."
+kubectl create namespace "$BS_NS_ARGOCD"
+kubectl create namespace "$BS_NS_DEV"
+kubectl create namespace "$BS_NS_GITLAB"
 
-GITLAB_URL="http://localhost:8929"
+echo "installing argocd..."
+kubectl apply -n "$BS_NS_ARGOCD" --server-side -f "$ARGOCD_YAML"
 
-# Get an OAuth token for root
-OAUTH_TOKEN="$(curl -fsSL \
-  --request POST "${GITLAB_URL}/oauth/token" \
-  --data "grant_type=password&username=root&password=${GITLAB_PASSWORD}" \
-  | grep -oP '(?<="access_token":")[^"]+')"
+echo "waiting for argocd pods to boot..."
+sleep 8
+kubectl wait --for=condition=Ready pods --all -n "$BS_NS_ARGOCD" --timeout=300s
 
-# Create a personal access token with API + write_repository scopes
-PAT="$(curl -fsSL \
-  --request POST "${GITLAB_URL}/api/v4/users/1/personal_access_tokens" \
-  --header "Authorization: Bearer ${OAUTH_TOKEN}" \
-  --data "name=argocd&scopes[]=api&scopes[]=write_repository" \
-  | grep -oP '(?<="token":")[^"]+')"
+echo "applying argocd configurations: $BS_ARGOCD_CONFS..."
+kubectl apply -f $BS_ARGOCD_CONFS
 
-# Create the 'playground' project (public, so ArgoCD can pull without auth)
-curl -fsSL \
-  --request POST "${GITLAB_URL}/api/v4/projects" \
-  --header "PRIVATE-TOKEN: ${PAT}" \
-  --data "name=playground&visibility=public&initialize_with_readme=false" \
-  > /dev/null 2>&1 || true
+echo "extracting argocd password:"
+kubectl -n "$BS_NS_ARGOCD" get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+echo ""
 
-# Push app manifests into the local repo
-TMP_DIR="$(mktemp -d)"
-git clone "http://oauth2:${PAT}@localhost:8929/root/playground.git" "${TMP_DIR}" 2>/dev/null \
-  || git -C "${TMP_DIR}" init
-cp "${CONFS}/deployment.yaml" "${TMP_DIR}/deployment.yaml"
-git -C "${TMP_DIR}" config user.email "root@gitlab.local"
-git -C "${TMP_DIR}" config user.name  "root"
-git -C "${TMP_DIR}" add .
-git -C "${TMP_DIR}" diff --cached --quiet \
-  || git -C "${TMP_DIR}" commit -m "initial: add playground deployment"
-git -C "${TMP_DIR}" remote set-url origin \
-  "http://oauth2:${PAT}@localhost:8929/root/playground.git" 2>/dev/null || true
-git -C "${TMP_DIR}" push -u origin HEAD:main
-rm -rf "${TMP_DIR}"
+echo "installing gitlab..."
+helm repo add gitlab https://charts.gitlab.io/
+helm repo update
 
-kill "${PF_PID}" 2>/dev/null || true
-trap - EXIT
+envsubst < "$CONF_DIR/utils-manif.yaml" | kubectl apply -f -
 
-# ── 7. ArgoCD Application (points to local GitLab inside the cluster) ─────────
-kubectl apply -n "${ARGOCD_NS}" -f "${CONFS}/argocd-app.yaml"
+envsubst < "$CONF_DIR/values.yaml" | helm upgrade --install gitlab gitlab/gitlab \
+    --namespace "$BS_NS_GITLAB" --timeout 20m --wait -f -
 
-# ── 8. Summary ────────────────────────────────────────────────────────────────
-ARGOCD_PASSWORD="$(kubectl -n "${ARGOCD_NS}" get secret argocd-initial-admin-secret \
-  -o jsonpath='{.data.password}' | base64 -d)"
+echo "extracting gitlab root password:"
+kubectl -n "$BS_NS_GITLAB" get secret gitlab-gitlab-initial-root-password \
+    -o jsonpath="{.data.password}" | base64 -d
+echo ""
 
-cat <<EOF
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- Argo CD UI  : kubectl port-forward svc/argocd-server -n argocd 8080:443
-               → https://localhost:8080
-               user: admin  /  password: ${ARGOCD_PASSWORD}
-
- GitLab UI   : kubectl port-forward svc/gitlab-webservice-default -n gitlab 8929:8080
-               → http://localhost:8929
-               user: root   /  password: ${GITLAB_PASSWORD}
-
- App         : kubectl get pods -n dev
-               curl http://localhost:8888/
-
- To update the app version:
-   edit bonus/confs/deployment.yaml (change v1 → v2), commit and push
-   to your local GitLab → ArgoCD will sync automatically.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-EOF
+# echo "skipping ssl srtf checks for special repo..."
+# argocd repo add https://gitlab.10.32.66.207.nip.io/root/REPO_NAME.git --insecure-skip-server-verification
