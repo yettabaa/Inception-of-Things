@@ -8,14 +8,14 @@ global:
 
   redis:
     host: host.k3d.internal
-    user: redisuser
+    user: ${REDIS_USER}
     auth:
       secret: glab-secrets
       key: REDIS_PASS
 
   psql:
     host: host.k3d.internal
-    username: test
+    username: ${PG_USER}
     password:
       secret: glab-secrets
       key: PG_PASS

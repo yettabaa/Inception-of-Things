@@ -1,14 +1,30 @@
+# Repository credentials: GitLab serves a self-signed certificate, so Argo CD
+# must skip TLS verification; root/password lets it read a private project.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitlab-repo
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: git
+  url: https://gitlab.${GITLAB_IP}.nip.io/root/${GITLAB_REPO}.git
+  insecure: "true"
+  username: root
+  password: ${GITLAB_ROOT_PASSWORD}
+---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: p3-application
+  name: playground
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://gitlab.10.32.66.207.nip.io/root/REPO_NAME
+    repoURL: https://gitlab.${GITLAB_IP}.nip.io/root/${GITLAB_REPO}.git
     targetRevision: HEAD
-    path: . 
+    path: .
   destination:
     server: https://kubernetes.default.svc
     namespace: dev
@@ -16,5 +32,3 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
