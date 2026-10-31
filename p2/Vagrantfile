@@ -4,7 +4,6 @@ SERVER_IP = "192.168.56.110"
 
 Vagrant.configure("2") do |config|
   config.vm.box = BOX
-  config.vm.synced_folder "./confs", "/confs"
 
   config.vm.define "#{LOGIN}S" do |server|
     server.vm.hostname = "#{LOGIN}S"

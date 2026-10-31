@@ -32,11 +32,11 @@ vagrant destroy -f
 
 ## cgroup
 
-Cgroups ( **control groups** ) is  =a Linux kernel feature that limits, accounts for, and isolates the resource usage (such as CPU, memory, disk I/O, and network) of a collection of processes.
+Cgroups ( **control groups** ) is a Linux kernel feature that limits, accounts for, and isolates the resource usage (such as CPU, memory, disk I/O, and network) of a collection of processes.
 
 ## The problem
 
-Wiupthout extra flags, K3s picks the default-route interface (NAT). Nodes then show `INTERNAL-IP 10.0.2.15` and look `Ready`, but the cluster is broken:
+Without extra flags, K3s picks the default-route interface (NAT). Nodes then show `INTERNAL-IP 10.0.2.15` and look `Ready`, but the cluster is broken:
 
 - Pod-to-pod traffic between nodes fails.
 - `kubectl logs` / `kubectl exec` on worker pods fail or hang.
