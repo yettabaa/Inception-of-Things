@@ -10,4 +10,5 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server" sh -s - \
   --write-kubeconfig-mode 644
 
 # /vagrant is the project folder, synced into the VM by default.
+until kubectl get nodes >/dev/null 2>&1; do sleep 2; done
 kubectl apply -f /vagrant/confs/

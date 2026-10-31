@@ -1,3 +1,4 @@
 .vagrant/
 *.token
 node-token
+bonus/confs/.env

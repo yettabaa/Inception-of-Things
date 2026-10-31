@@ -26,7 +26,7 @@ This project introduces the fundamental Kubernetes resources used to deploy appl
                  |         |         |
                  v         v         v
               Service   Service   Service
-              app-one   app-two  app-three
+              app1      app2      app3
                  |         |         |
                  v         v         v
               Pod(s)    3 Pods     Pod(s)
@@ -50,16 +50,16 @@ Example:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: app-one
+  name: app1-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: app-one
+      app: app1
   template:
     metadata:
       labels:
-        app: app-one
+        app: app1
     spec:
       containers:
         - name: app
@@ -98,7 +98,7 @@ Pods are temporary: they can be deleted, replaced, or assigned different IP addr
 A Service provides a stable network endpoint for accessing a group of Pods selected by labels.
 
 ```text
-             Service: app-two
+             Service: app2-service
                     |
           +---------+---------+
           |         |         |
@@ -106,7 +106,7 @@ A Service provides a stable network endpoint for accessing a group of Pods selec
         Pod 1     Pod 2     Pod 3
 ```
 
-For example, the Service `app-two` selects the Pods belonging to application 2.
+For example, the Service `app2-service` selects the Pods belonging to application 2.
 
 A Service can distribute traffic across its selected Pods.
 
@@ -135,7 +135,7 @@ In this project, Traefik acts as the Ingress Controller that implements these ru
       app1.com      app2.com     Other host
           |            |            |
           v            v            v
-       app-one      app-two     app-three
+       app1         app2        app3
        Service      Service     Service
 ```
 
@@ -145,7 +145,7 @@ Example:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: apps
+  name: ingress
 spec:
   ingressClassName: traefik
   rules:
@@ -156,9 +156,9 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: app-one
+                name: app1-service
                 port:
-                  number: 8080
+                  number: 80
 
     - host: app2.com
       http:
@@ -167,12 +167,12 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: app-two
+                name: app2-service
                 port:
-                  number: 8080
+                  number: 80
 ```
 
-The remaining rule can route unmatched hosts to `app-three`.
+The remaining rule can route unmatched hosts to `app3-service`.
 
 **Key idea:** Ingress routes incoming HTTP requests to the appropriate Service based on rules such as the hostname and URL path.
 

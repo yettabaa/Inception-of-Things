@@ -30,11 +30,6 @@ echo "installing argocd..."
 kubectl apply -n argocd --server-side \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
-kubectl apply -f "$CONF_DIR/argo-app.yaml"
-
-echo "argocd admin password:"
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-echo
 
 echo "installing gitlab..."
 helm repo add gitlab https://charts.gitlab.io/
@@ -43,6 +38,17 @@ envsubst < "$CONF_DIR/utils-manif.yaml" | kubectl apply -f -
 envsubst < "$CONF_DIR/values.yaml" | helm upgrade --install gitlab gitlab/gitlab \
     --namespace gitlab --timeout 20m --wait -f -
 
-echo "gitlab root password:"
-kubectl -n gitlab get secret gitlab-gitlab-initial-root-password -o jsonpath="{.data.password}" | base64 -d
-echo
+GITLAB_ROOT_PASSWORD="$(kubectl -n gitlab get secret gitlab-gitlab-initial-root-password -o jsonpath='{.data.password}' | base64 -d)"
+export GITLAB_ROOT_PASSWORD
+
+echo "pointing argocd at the local gitlab project root/${GITLAB_REPO}..."
+envsubst < "$CONF_DIR/argo-app.yaml" | kubectl apply -f -
+
+cat <<MSG
+
+GitLab:   https://gitlab.${GITLAB_IP}.nip.io   user: root   password: ${GITLAB_ROOT_PASSWORD}
+          -> create the project "${GITLAB_REPO}" and push the P3 manifests to it (see ../README.md)
+Argo CD:  kubectl port-forward svc/argocd-server -n argocd 8080:443 -> https://localhost:8080
+          user: admin   password: $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)
+App:      kubectl get pods -n dev ; curl http://localhost:8888/
+MSG

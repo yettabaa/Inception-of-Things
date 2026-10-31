@@ -11,5 +11,5 @@ curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server" sh -s - \
   --advertise-address "${SERVER_IP}" \
   --write-kubeconfig-mode 644
 
-# /vagrant is the project folder, synced into every VM by default.
-cat /var/lib/rancher/k3s/server/node-token > /vagrant/node-token
+# /vagrant is the project folder (synced into every VM by default); the worker reads the token from there.
+cat /var/lib/rancher/k3s/server/node-token > /vagrant/confs/node-token
