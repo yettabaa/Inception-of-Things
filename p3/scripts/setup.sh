@@ -13,7 +13,7 @@ kubectl create namespace dev
 # server-side apply: some Argo CD CRDs exceed the client-side annotation size limit
 kubectl apply -n argocd --server-side \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
+kubectl -n argocd rollout status deployment/argocd-server --timeout=600s
 
 kubectl apply -n argocd -f "${CONFS}/argocd-app.yaml"
 

@@ -29,7 +29,7 @@ kubectl create namespace gitlab
 echo "installing argocd..."
 kubectl apply -n argocd --server-side \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
+kubectl -n argocd rollout status deployment/argocd-server --timeout=600s
 
 echo "installing gitlab..."
 helm repo add gitlab https://charts.gitlab.io/

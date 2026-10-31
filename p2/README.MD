@@ -63,9 +63,9 @@ spec:
     spec:
       containers:
         - name: app
-          image: paulbouwer/hello-kubernetes:1.10
+          image: hashicorp/http-echo:1.0
           ports:
-            - containerPort: 8080
+            - containerPort: 5678
 ```
 
 **Key idea:** A Deployment declares how the application should run.
