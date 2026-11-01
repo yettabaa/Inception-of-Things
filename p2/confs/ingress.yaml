@@ -1,5 +1,3 @@
-# Host-based routing handled by K3s' built-in Traefik.
-# The last rule has no host, so it matches every other Host header -> app3 (default).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

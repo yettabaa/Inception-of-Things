@@ -5,6 +5,64 @@
 The goal of this part is to deploy three web applications in a K3s cluster and make them accessible through a single IP address, depending on the requested hostname.
 
 This project introduces the fundamental Kubernetes resources used to deploy applications and manage network traffic.
+```text
+                 ┌──────────────────────────┐
+                 │       Deployment         │
+                 │                          │
+                 │     Desired replicas: 3  │
+                 └────────────┬─────────────┘
+                              │
+                              ▼
+                 ┌──────────────────────────┐
+                 │       ReplicaSet         │
+                 │                          │
+                 │   Ensures 3 Pods exist  │
+                 └────────────┬─────────────┘
+                              │
+                 ┌────────────┼────────────┐
+                 │            │            │
+                 ▼            ▼            ▼
+           ┌──────────┐ ┌──────────┐ ┌──────────┐
+           │  Pod 1   │ │  Pod 2   │ │  Pod 3   │
+           │          │ │          │ │          │
+           │  Nginx   │ │  Nginx   │ │  Nginx   │
+           └─────┬────┘ └─────┬────┘ └─────┬────┘
+                 │            │            │
+                 └────────────┼────────────┘
+                              │
+                              ▼
+                 ┌──────────────────────────┐
+                 │         Service          │
+                 │                          │
+                 │   Stable network access │
+                 │     to the 3 Pods        │
+                 └────────────┬─────────────┘
+                              │
+                              ▼
+                 ┌──────────────────────────┐
+                 │     Internal Client     │
+                 │       or Ingress        │
+                 └──────────────────────────┘
+```
+## kubernetes yaml
+
+In Kubernetes YAML, the kind field specifies the type of Kubernetes API resource (object) you want to create or manage.
+
+```yaml
+  kind: Pod
+  kind: Deployment
+  kind: ReplicaSet
+  kind: Service
+  kind: Ingress
+  kind: ConfigMap
+  kind: Secret
+  kind: PersistentVolume
+  kind: PersistentVolumeClaim
+  kind: StatefulSet
+  kind: DaemonSet
+  kind: Job
+  kind: CronJob
+```
 
 ## Architecture
 
@@ -38,58 +96,22 @@ This project introduces the fundamental Kubernetes resources used to deploy appl
 
 ## Kubernetes Concepts
 
-### 1. Deployment
-
-A Deployment manages the desired state of an application.
-
-It allows Kubernetes to create and maintain the required number of Pods. It also supports rolling updates and rollbacks.
-
-Example:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: app-one
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: app-one
-  template:
-    metadata:
-      labels:
-        app: app-one
-    spec:
-      containers:
-        - name: app
-          image: paulbouwer/hello-kubernetes:1.10
-          ports:
-            - containerPort: 8080
-```
-
-**Key idea:** A Deployment declares how the application should run.
-
-### 2. ReplicaSet
+### 1. ReplicaSet
 
 A ReplicaSet ensures that the required number of identical Pods is running.
 
 For example, if a Deployment specifies three replicas and one Pod fails, Kubernetes attempts to create a replacement.
 
-```text
-Deployment
-    |
-    v
-ReplicaSet
-    |
-    +---- Pod 1
-    +---- Pod 2
-    +---- Pod 3
-```
+**Key idea:** A ReplicaSet maintains the desired number of Pods.
+
+
+### 2. Deployment
 
 A Deployment manages ReplicaSets, so we usually create Deployments rather than managing ReplicaSets directly.
 
-**Key idea:** A ReplicaSet maintains the desired number of Pods.
+It allows Kubernetes to create and maintain the required number of Pods. It also supports rolling updates and rollbacks.
+
+**Key idea:** A Deployment declares how the application should run.
 
 ### 3. Service
 
@@ -98,12 +120,22 @@ Pods are temporary: they can be deleted, replaced, or assigned different IP addr
 A Service provides a stable network endpoint for accessing a group of Pods selected by labels.
 
 ```text
-             Service: app-two
-                    |
-          +---------+---------+
-          |         |         |
-          v         v         v
-        Pod 1     Pod 2     Pod 3
+                  Kubernetes Service
+                  Name: app-two
+                  Type: ClusterIP
+                  ClusterIP: 10.43.0.20
+                  Port: 80
+                         |
+             +-----------+-----------+
+             |           |           |
+             v           v           v
+       +-----------+ +-----------+ +-----------+
+       |  Pod 1    | |  Pod 2    | |  Pod 3    |
+       | app=two   | | app=two   | | app=two   |
+       |           | |           | |           |
+       | 10.42.1.2 | | 10.42.1.3 | | 10.42.1.4 |
+       | Port 8080 | | Port 8080 | | Port 8080 |
+       +-----------+ +-----------+ +-----------+
 ```
 
 For example, the Service `app-two` selects the Pods belonging to application 2.
@@ -139,42 +171,6 @@ In this project, Traefik acts as the Ingress Controller that implements these ru
        Service      Service     Service
 ```
 
-Example:
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: apps
-spec:
-  ingressClassName: traefik
-  rules:
-    - host: app1.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: app-one
-                port:
-                  number: 8080
-
-    - host: app2.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: app-two
-                port:
-                  number: 8080
-```
-
 The remaining rule can route unmatched hosts to `app-three`.
 
 **Key idea:** Ingress routes incoming HTTP requests to the appropriate Service based on rules such as the hostname and URL path.
-
-
-

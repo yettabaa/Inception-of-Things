@@ -45,6 +45,14 @@ Wiupthout extra flags, K3s picks the default-route interface (NAT). Nodes then s
 
 ## The fix: flags to pass to K3s
 
+IFACE=$(ip -o -4 a | grep ${SERVER_IP} | awk '{print $2}')
+
+Dynamically extract the interface holding the private IP (e.g., enp0s8 or eth1)
+-o — output each interface on one line.
+-4 — show IPv4 addresses only.
+addr — show IP addresses assigned to interfaces.
+show — display the information.
+
 | Flag                                     | Where  | Purpose                                          | Without it                            |
 | ---------------------------------------- | ------ | ------------------------------------------------ | ------------------------------------- |
 | `--write-kubeconfig-mode 644`          | server | Makes `k3s.yaml` readable by non-root          | `kubectl` needs `sudo`            |
