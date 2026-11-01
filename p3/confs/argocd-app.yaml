@@ -1,5 +1,5 @@
 # Argo CD Application: keep namespace "dev" in sync with the public GitHub repo.
-# CHANGE repoURL: the repo name must contain the login of a team member.
+# Repo name contains the team login (reben-ha), as the subject requires.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/CHANGE_ME/ribenham-iot.git
+    repoURL: https://github.com/RED-MEGA/reben-ha-iot.git
     targetRevision: HEAD
     path: manifests
   destination:
