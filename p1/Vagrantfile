@@ -1,6 +1,6 @@
 # P1 - K3s server (controller) + K3s agent (worker), run by Vagrant.
 # CHANGE LOGIN to the 42 login of a team member: machines become "<login>S" / "<login>SW".
-LOGIN = "ribenham"
+LOGIN = "reben-ha"
 BOX = "bento/debian-13" # latest stable Debian
 SERVER_IP = "192.168.56.110"
 WORKER_IP = "192.168.56.111"

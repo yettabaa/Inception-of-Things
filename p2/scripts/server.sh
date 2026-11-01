@@ -25,6 +25,7 @@ echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' > /etc/profile.d/k3s-kubeconf
 echo "alias k=kubectl" >> /etc/profile.d/k3s-kubeconfig.sh
 
 # Wait for the node and for Traefik (it installs the Ingress controller).
+until [ -n "$(kubectl get nodes --no-headers 2>/dev/null)" ]; do sleep 2; done # node registers shortly after k3s starts
 kubectl wait --for=condition=Ready node --all --timeout=300s
 until kubectl -n kube-system get deployment traefik >/dev/null 2>&1; do sleep 3; done
 kubectl -n kube-system rollout status deployment/traefik --timeout=300s
