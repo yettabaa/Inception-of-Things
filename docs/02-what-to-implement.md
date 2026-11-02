@@ -9,7 +9,7 @@ Each item maps to a requirement in the subject. Status reflects the repo as it i
 |----------|-------|-------|
 | Distro / box | Debian 13 — `bento/debian-13` (has a VirtualBox build) | `BOX` in both Vagrantfiles |
 | Vagrant provider | VirtualBox | `config.vm.provider "virtualbox"` |
-| Naming login | `ribenham` (**placeholder — use the real login**) | `LOGIN` in both Vagrantfiles |
+| Naming login | `reben-ha` (**placeholder — use the real login**) | `LOGIN` in both Vagrantfiles |
 | VM resources | 1 CPU, 1024 MB | Vagrantfiles |
 | P2 apps | `paulbouwer/hello-kubernetes:1.10`, one message per app | `p2/confs/apps.yaml` |
 | P3 app | Wil's `wil42/playground` v1/v2, port 8888 | `p3/confs/dev-repo/manifests/` |

@@ -22,18 +22,25 @@ if ! curl -fsS --resolve "${RESOLVE}" -H "PRIVATE-TOKEN: ${TOKEN}" "${URL}/api/v
     --data-urlencode "name=${PROJECT}" --data-urlencode "visibility=public" >/dev/null
 fi
 
-WORK="$(mktemp -d)"
-trap 'rm -rf "${WORK}"' EXIT
-cp -r "${MANIFESTS}" "${WORK}/manifests"
-sed -i 's/playground:v[0-9]*/playground:v1/' "${WORK}/manifests/deployment.yaml"
-cd "${WORK}"
-git init -q -b main
-git add -A
-git -c user.name=iot -c user.email=iot@local commit -q -m "feat: add playground v1 manifests"
-# Token goes through the credential header, not the URL, so it stays out of logs/.git/config.
-git -c "http.curloptResolve=${RESOLVE}" \
-    -c "http.extraHeader=Authorization: Basic ${AUTH}" \
-    push -q -f "${URL}/root/${PROJECT}.git" main
+# Seed v1 only into an empty project: main is protected, and a rerun must not overwrite later pushes.
+EMPTY="$(curl -fsS --resolve "${RESOLVE}" -H "PRIVATE-TOKEN: ${TOKEN}" "${URL}/api/v4/projects/root%2F${PROJECT}" \
+  | python3 -I -c 'import sys,json; print(json.load(sys.stdin)["empty_repo"])')"
+if [ "${EMPTY}" = "True" ]; then
+  WORK="$(mktemp -d)"
+  trap 'rm -rf "${WORK}"' EXIT
+  cp -r "${MANIFESTS}" "${WORK}/manifests"
+  sed -i 's/playground:v[0-9]*/playground:v1/' "${WORK}/manifests/deployment.yaml"
+  cd "${WORK}"
+  git init -q -b main
+  git add -A
+  git -c user.name=iot -c user.email=iot@local commit -q -m "feat: add playground v1 manifests"
+  # Token goes through the credential header, not the URL, so it stays out of logs/.git/config.
+  git -c "http.curloptResolve=${RESOLVE}" \
+      -c "http.extraHeader=Authorization: Basic ${AUTH}" \
+      push -q "${URL}/root/${PROJECT}.git" main
+else
+  echo "Project already has content; leaving it as is (use set-version.sh to change the version)."
+fi
 
 # Argo CD runs inside the cluster, so it uses the in-cluster service, not gitlab.local.
 kubectl apply -n argocd -f "${HERE}/../confs/argocd-app.yaml"

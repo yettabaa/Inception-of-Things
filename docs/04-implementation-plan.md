@@ -34,7 +34,7 @@ Acceptance: the P1 checklist in `02-what-to-implement.md`.
 3. ⬜ `p3/confs/argocd-app.yaml` — set the real `repoURL`.
 
 **B**
-4. ⬜ Create the **public** GitHub repo (name contains the login, e.g. `ribenham-iot`).
+4. ⬜ Create the **public** GitHub repo (name contains the login, e.g. `reben-ha-iot`).
 5. ⬜ Copy `p3/confs/dev-repo/manifests/*` to the repo root under `manifests/`, push (v1).
 6. ⬜ (Only if own app) build/push Docker Hub image `:v1` and `:v2` with visible differences, change `image:`.
 
@@ -60,4 +60,23 @@ Acceptance: the P1 checklist in `02-what-to-implement.md`.
 | Interface autodetect by IP | `ip -o -4 addr` + awk | Verify `--flannel-iface` in `journalctl -u k3s` |
 | Argo CD `stable` manifest and K3s "latest" drift | Unpinned on purpose (subject: latest) | Pin versions if a defense-day regression appears |
 | Running P3 inside a nested VM | K3d needs Docker; nested virt not required, but RAM ≥ 4 GB advisable | Give the P3 VM 2 CPU / 4 GB |
-| Placeholders | `LOGIN=ribenham`, `repoURL=CHANGE_ME` | Replace before the defense |
+| Placeholders | none left: `LOGIN=reben-ha`, `repoURL=https://github.com/RED-MEGA/reben-ha-iot.git` | — |
+
+## Test results (run on this workstation, 2026-11-01)
+
+| Part | Result | Notes |
+|------|--------|-------|
+| P1 | pass | 2 nodes `Ready`, `192.168.56.110/.111`; worker `eth1` has `.111` |
+| P2 | pass | `app1.com`→app1, `app2.com`→app2, other/no host→app3, 3 `app-two` pods, Ingress present |
+| P3 | pass | `curl localhost:8888` v1 → push v2 to GitHub → Argo CD sync → v2 (ran on host Docker, not a VM) |
+| Bonus | pass | local GitLab CE in ns `gitlab`; Argo CD syncs `dev` from it; v1 → v2 via `bonus/scripts/set-version.sh v2` |
+
+Bugs found by running it (all fixed):
+- P1/P2 used the same VirtualBox VM name → P2's `vagrant up` refused. P2 now uses `<login>S-p2` (hostname unchanged).
+- `p2/scripts/server.sh`: `kubectl wait` ran before the node registered. Now waits for the node first.
+- Bonus: GitLab Helm chart v10 requires external PostgreSQL/Redis/object storage, so the bonus uses the official all-in-one `gitlab/gitlab-ce:latest` image instead (`bonus/confs/gitlab.yaml`).
+- Bonus: `/-/readiness` is IP-allowlisted (404 for the kubelet) → readiness probe uses `/users/sign_in`. This GitLab has no password OAuth grant → scripts mint a token with `gitlab-rails runner`.
+
+Bonus run order: `bonus/scripts/setup.sh` (first image pull ≈ 16 min here) → `bonus/scripts/project.sh` → `bonus/scripts/set-version.sh v2`.
+
+Not yet done: rebuild P1/P2 from scratch (`vagrant destroy -f && vagrant up`), rebuild the bonus from scratch, run P3/bonus inside a clean VM.
