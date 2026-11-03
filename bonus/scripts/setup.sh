@@ -2,68 +2,38 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-CONF_DIR="$(cd -- "$SCRIPT_DIR/../confs" && pwd)"
-ENV_FILE="${ENV_FILE:-$CONF_DIR/.env}"
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+END='\033[0m'
+GITLAB_VERSION="19.5.3-ce.0"
 
-if [[ ! -f "$ENV_FILE" ]]; then
-    ENV_FILE="$CONF_DIR/example.env"
+printf "${GREEN} Reuse the P3 cluster build it if missing. ${END}\n"
+k3d cluster list iot >/dev/null 2>&1 || ./p3/scripts/setup.sh
+
+printf "${GREEN}Creating namespace gitlab${END}\n"
+kubectl create namespace gitlab --dry-run=client -o yaml | kubectl apply -f -
+
+
+printf "${GREEN}Pulling GitLab image and importing into k3d cluster...${END}\n"
+if ! docker exec k3d-iot-server-0 crictl images | grep -q "gitlab/gitlab-ce.*${GITLAB_VERSION}"; then
+  docker pull gitlab/gitlab-ce:${GITLAB_VERSION}
+  k3d image import gitlab/gitlab-ce:${GITLAB_VERSION} -c iot
+else
+  printf "${GREEN}GitLab image is already imported into k3d cluster.${END}\n"
 fi
 
-set -a
-# shellcheck disable=SC1090
-source "$ENV_FILE"
-set +a
 
-BS_ARGOCD_CONFS="$CONF_DIR/argo-app.yaml"
-BS_NS_ARGOCD="argocd"
-BS_NS_DEV="dev"
-BS_NS_GITLAB="gitlab"
-BS_CLUSTER="bonus"
-ARGOCD_YAML="https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
+printf "${GREEN}Generate and store GitLab's root password if not already set. ${END}\n"
+if ! kubectl -n gitlab get secret gitlab-root-password >/dev/null 2>&1; then
+  kubectl -n gitlab create secret generic gitlab-root-password \
+    --from-literal=password="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)"
+fi
 
-echo "cleaning up old evironments..."
-k3d cluster delete $BS_CLUSTER 2>/dev/null
+printf "${GREEN}Deploying GitLab...${END}\n"
+kubectl apply -f ./bonus/confs/gitlab.yaml
+kubectl -n gitlab rollout status deployment/gitlab-deployment --timeout=6000s
 
-echo "creating k3s cluster $BS_CLUSTER..."
-k3d cluster create $BS_CLUSTER -p 8888:80@loadbalancer -p 443:443@loadbalancer -p 80:80@loadbalancer -p 222:22@loadbalancer
-
-cd "$CONF_DIR"
-docker-compose down -v
-docker-compose up -d
-
-echo "creating namespaces $BS_NS_ARGOCD, $BS_NS_DEV, $BS_NS_GITLAB..."
-kubectl create namespace "$BS_NS_ARGOCD"
-kubectl create namespace "$BS_NS_DEV"
-kubectl create namespace "$BS_NS_GITLAB"
-
-echo "installing argocd..."
-kubectl apply -n "$BS_NS_ARGOCD" --server-side -f "$ARGOCD_YAML"
-
-echo "waiting for argocd pods to boot..."
-sleep 8
-kubectl wait --for=condition=Ready pods --all -n "$BS_NS_ARGOCD" --timeout=300s
-
-echo "applying argocd configurations: $BS_ARGOCD_CONFS..."
-kubectl apply -f $BS_ARGOCD_CONFS
-
-echo "extracting argocd password:"
-kubectl -n "$BS_NS_ARGOCD" get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-echo ""
-
-echo "installing gitlab..."
-helm repo add gitlab https://charts.gitlab.io/
-helm repo update
-
-envsubst < "$CONF_DIR/utils-manif.yaml" | kubectl apply -f -
-
-envsubst < "$CONF_DIR/values.yaml" | helm upgrade --install gitlab gitlab/gitlab \
-    --namespace "$BS_NS_GITLAB" --timeout 20m --wait -f -
-
-echo "extracting gitlab root password:"
-kubectl -n "$BS_NS_GITLAB" get secret gitlab-gitlab-initial-root-password \
-    -o jsonpath="{.data.password}" | base64 -d
-echo ""
-
-# echo "skipping ssl srtf checks for special repo..."
-# argocd repo add https://gitlab.10.32.66.207.nip.io/root/REPO_NAME.git --insecure-skip-server-verification
+printf "${BLUE}GitLab: http://gitlab.local:8888   (add '127.0.0.1 gitlab.local' to /etc/hosts for a browser)${END}\n"
+printf "${GREEN}  user: root${END}\n"
+printf "${GREEN}  password: $(kubectl -n gitlab get secret gitlab-root-password -o jsonpath='{.data.password}' | base64 -d)${END}\n"
+printf "${BLUE}Next: ./bonus/scripts/add-app.sh${END}\n"

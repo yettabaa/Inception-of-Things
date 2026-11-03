@@ -14,7 +14,6 @@ fi
 sudo apt-get update -y
 sudo apt-get install -y ca-certificates curl gnupg
 
-# Install Docker
 
 if ! command -v docker >/dev/null; then
   printf "${BLUE}Installing Docker...${END}\n"
@@ -31,7 +30,6 @@ fi
 sudo systemctl enable --now docker
 sudo usermod -aG docker "${USER}"
 
-# Install kubectl
 
 if ! command -v kubectl >/dev/null; then
   printf "${BLUE}Installing kubectl...${END}\n"
@@ -43,7 +41,6 @@ else
   printf "${GREEN}kubectl is already installed.${END}\n"
 fi
 
-# Install k3d
 
 if ! command -v k3d >/dev/null; then
   printf "${BLUE}Installing k3d...${END}\n"
@@ -52,7 +49,6 @@ else
   printf "${GREEN}k3d is already installed.${END}\n"
 fi
 
-# Install ArgoCD
 
 if ! command -v argocd >/dev/null; then
   printf "${BLUE}Installing ArgoCD...${END}\n"

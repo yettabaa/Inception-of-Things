@@ -1,14 +1,15 @@
+# Same Application as P3, but the source is the local GitLab (in-cluster service address).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: p3-application
+  name: playground
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://gitlab.10.32.66.207.nip.io/root/REPO_NAME
-    targetRevision: HEAD
-    path: . 
+    repoURL: http://gitlab-service.gitlab.svc/root/yettabaa-iot-app.git
+    targetRevision: main
+    path: .
   destination:
     server: https://kubernetes.default.svc
     namespace: dev
@@ -16,5 +17,3 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true

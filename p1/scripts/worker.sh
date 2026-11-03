@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 WORKER_IP="192.168.56.111"
 SERVER_IP="192.168.56.110"

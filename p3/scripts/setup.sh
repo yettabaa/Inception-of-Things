@@ -2,23 +2,34 @@
 
 set -euo pipefail
 
-CONFS="$(cd "$(dirname "$0")/../confs" && pwd)"
+GREEN='\033[0;32m'
+END='\033[0m'
 
 if ! k3d cluster list iot >/dev/null 2>&1; then
+  printf "${GREEN}Creating k3d cluster 'iot'${END}\n"
   k3d cluster create iot -p "8888:80@loadbalancer" --wait
+else
+  printf "${GREEN}Reusing existing k3d cluster 'iot'${END}\n"
 fi
 
+printf "${GREEN}Creating argocd and dev namespaces${END}\n"
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace dev --dry-run=client -o yaml | kubectl apply -f -
 
 
+printf "${GREEN}Installing Argo CD${END}\n"
 kubectl apply -n argocd --server-side --force-conflicts \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+
+printf "${GREEN}Waiting for Argo CD pods to be ready${END}\n"
 kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
 kubectl -n argocd rollout status deployment/argocd-repo-server --timeout=300s
 kubectl -n argocd rollout status deployment/argocd-applicationset-controller --timeout=300s
 
-kubectl apply -n argocd -f "${CONFS}/argocd-app.yaml"
+
+printf "${GREEN}Applying Argo CD application${END}\n"
+kubectl apply -n argocd -f "./p3/confs/argocd-app.yaml"
 
 cat <<EOF
 
