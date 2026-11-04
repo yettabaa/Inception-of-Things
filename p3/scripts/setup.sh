@@ -3,6 +3,7 @@
 set -euo pipefail
 
 GREEN='\033[0;32m'
+BLUE='\033[0;34m'
 END='\033[0m'
 
 if ! k3d cluster list iot >/dev/null 2>&1; then
@@ -31,10 +32,9 @@ kubectl -n argocd rollout status deployment/argocd-applicationset-controller --t
 printf "${GREEN}Applying Argo CD application${END}\n"
 kubectl apply -n argocd -f "./p3/confs/argocd-app.yaml"
 
-cat <<EOF
 
-Argo CD UI:  kubectl port-forward svc/argocd-server -n argocd 8080:443   ->  https://localhost:8080
-  user:      admin
-  password:  $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)
-App check:   kubectl get pods -n dev ;  curl http://localhost:8888/
-EOF
+printf "${BLUE} Argo CD UI:  kubectl port-forward svc/argocd-server -n argocd 8080:443   ->  https://localhost:8080${END}\n"
+printf "${GREEN}  user:      admin${END}\n"
+printf "${GREEN}  password:  $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)${END}\n"
+printf "${BLUE}App check:   kubectl get pods -n dev ;  curl http://localhost:8888/${END}\n"
+

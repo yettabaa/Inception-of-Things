@@ -23,10 +23,9 @@ TOKEN=$(kubectl -n gitlab exec deployment/gitlab-deployment -- \
 
   
 printf "${GREEN}Creating public GitLab project...${END}\n"
-if ! curl -fsS -X GET -H "PRIVATE-TOKEN: ${TOKEN}" "${GITLAB}/api/v4/projects/root%2F${REPO}" >/dev/null; then
-  curl -fsS -X POST -H "PRIVATE-TOKEN: ${TOKEN}" "${GITLAB}/api/v4/projects" \
-    --data-urlencode "name=${REPO}" --data-urlencode "visibility=public" >/dev/null
-fi
+curl -fsS -X POST -H "PRIVATE-TOKEN: ${TOKEN}" "${GITLAB}/api/v4/projects" \
+  --data-urlencode "name=${REPO}" --data-urlencode "visibility=public" >/dev/null
+
 
 printf "${GREEN}Cloning GitHub repository...${END}\n"
 rm -rf "${TMP_DIR}"
@@ -35,6 +34,7 @@ git clone "${GITHUB}" "${TMP_DIR}"
 
 printf "${GREEN}Pushing to GitLab...${END}\n"
 git -C "${TMP_DIR}" push "http://root:${TOKEN}@gitlab.local:8888/root/${REPO}.git"
+git -C "${TMP_DIR}" remote add gitlab "http://root:${TOKEN}@gitlab.local:8888/root/${REPO}.git"
 
 
 printf "${GREEN}Creating Argo CD application...${END}\n"
