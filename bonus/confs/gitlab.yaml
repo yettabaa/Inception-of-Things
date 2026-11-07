@@ -48,12 +48,12 @@ spec:
             requests: {memory: 6Gi, cpu: 500m}
             limits: {memory: 8Gi, cpu: "2"}
           
-          readinessProbe:
-            # /-/readiness is IP-allowlisted (404 for the kubelet), so probe the public sign-in page.
-            httpGet: {path: /users/sign_in, port: 80, httpHeaders: [{name: Host, value: gitlab.local}]}
-            initialDelaySeconds: 60
-            periodSeconds: 15
-            failureThreshold: 60
+          # readinessProbe:
+          #   # /-/readiness is IP-allowlisted (404 for the kubelet), so probe the public sign-in page.
+          #   httpGet: {path: /users/sign_in, port: 80, httpHeaders: [{name: Host, value: gitlab.local}]}
+          #   initialDelaySeconds: 60
+          #   periodSeconds: 15
+          #   failureThreshold: 60
           volumeMounts:
             - {name: data, mountPath: /etc/gitlab, subPath: config}
             - {name: data, mountPath: /var/log/gitlab, subPath: logs}
@@ -78,7 +78,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: gitlab
+  name: gitlab-ingress
   namespace: gitlab
 spec:
   ingressClassName: traefik

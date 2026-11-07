@@ -2,7 +2,7 @@
 
 ## vagrant
 
-Vagrant is an open-source software tool created by HashiCorp for building, managing, and distributing portable virtualized development environments
+Vagrant is an open-source tool that helps us to automate the creation and management of Virtual Machines. In a nutshell, we can specify the configuration of a virtual machine in a simple configuration file, and Vagrant creates the same Virtual machine using just one simple command. It provides command-line interfaces to automate such tasks. 
 
 Boot up / Create environment
 ```bash
@@ -28,6 +28,40 @@ Completely wipe and delete VM
 ```bash
 vagrant destroy -f
 ```
+
+## k8s
+https://www.geeksforgeeks.org/devops/kubernetes-architecture/
+https://kubernetes.io/docs/concepts/architecture/
+
+1. Master node (Control Plane)
+The control plane components manage and control the entire Kubernetes cluster.
+- kube-apiserver
+- etcd
+- kube-scheduler
+- kube-controller-manager
+- cloud-controller-manager (when using a cloud provider)
+2. Worker node (Data Plane)
+The node components run and manage the applications (Pods).
+- kubelet
+- kube-proxy
+- Container Runtime (containerd, CRI-O, etc.)
+
+3. What controllers run inside kube-controller-manager?
+There are multiple controllers, each responsible for a different Kubernetes resource or behavior.
+Controller	Responsibility
+Deployment Controller	Manages Deployments and their ReplicaSets
+ReplicaSet Controller	Maintains the desired number of Pods
+Node Controller	Monitors node health
+Job Controller	Ensures Jobs run to completion
+Namespace Controller	Handles namespace lifecycle and deletion
+ServiceAccount Controller	Manages ServiceAccounts
+
+## k3s
+k3s use docker by default ?
+K3s comes with containerd bundled as its default container runtime.
+
+https://docs.k3s.io/architecture
+
 
 ## Network
 

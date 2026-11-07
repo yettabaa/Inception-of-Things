@@ -174,3 +174,211 @@ In this project, Traefik acts as the Ingress Controller that implements these ru
 The remaining rule can route unmatched hosts to `app-three`.
 
 **Key idea:** Ingress routes incoming HTTP requests to the appropriate Service based on rules such as the hostname and URL path.
+
+# Useful kubectl Commands
+
+A collection of useful `kubectl` commands for managing, inspecting, debugging, and monitoring Kubernetes resources.
+
+## 1. Get Resources
+
+### Get all resources in a namespace
+
+```bash
+kubectl get all -n <namespace>
+```
+
+Get all resources in the current namespace:
+
+```bash
+kubectl get all
+```
+
+### Get specific resources
+
+```bash
+kubectl get pods -n <namespace>
+kubectl get services -n <namespace>
+kubectl get deployments -n <namespace>
+kubectl get replicasets -n <namespace>
+kubectl get configmaps -n <namespace>
+kubectl get secrets -n <namespace>
+kubectl get persistentvolumeclaims -n <namespace>
+kubectl get ingress -n <namespace>
+```
+
+### Get resources across all namespaces
+
+Use `-A` (or `--all-namespaces`) to retrieve resources from every namespace.
+
+```bash
+kubectl get pods -A
+kubectl get services -A
+kubectl get deployments -A
+kubectl get all -A
+```
+
+### Get namespaces
+
+```bash
+kubectl get namespaces
+kubectl get ns
+```
+
+### Get nodes
+
+```bash
+kubectl get nodes
+kubectl get nodes -o wide
+```
+
+The `-o wide` option displays additional information, such as node IP addresses and operating system details.
+
+## 2. Describe and Inspect Resources
+
+`get` provides a summary of a resource, while `describe` displays detailed information, including configuration, status, and events.
+
+### Describe resources
+
+```bash
+kubectl describe pod <pod-name> -n <namespace>
+kubectl describe deployment <deployment-name> -n <namespace>
+kubectl describe service <service-name> -n <namespace>
+kubectl describe node <node-name>
+```
+
+### Get the complete YAML configuration
+
+Use `-o yaml` to display the resource configuration in YAML format.
+
+```bash
+kubectl get pod <pod-name> -n <namespace> -o yaml
+kubectl get deployment <deployment-name> -n <namespace> -o yaml
+```
+
+### Get resource names only
+
+```bash
+kubectl get pods -n <namespace> -o name
+```
+
+## 3. Manage Deployments
+
+### Scale a deployment
+
+Change the number of replicas running in a deployment.
+
+```bash
+kubectl scale deployment nginx --replicas=3 -n dev
+```
+
+### Restart a deployment
+
+Restart all pods managed by a deployment.
+
+```bash
+kubectl rollout restart deployment/nginx -n dev
+```
+
+### Check rollout status
+
+Check whether a deployment rollout has completed successfully.
+
+```bash
+kubectl rollout status deployment/nginx -n dev
+```
+
+### Check rollout history
+
+Display the revision history of a deployment.
+
+```bash
+kubectl rollout history deployment/nginx -n dev
+```
+
+### Rollback to the previous version
+
+Undo the latest deployment rollout.
+
+```bash
+kubectl rollout undo deployment/nginx -n dev
+```
+
+## 4. Delete Resources
+
+Delete specific Kubernetes resources using their names and namespaces.
+
+```bash
+kubectl delete pod <pod-name> -n <namespace>
+kubectl delete deployment <deployment-name> -n <namespace>
+kubectl delete service <service-name> -n <namespace>
+```
+
+Delete an entire namespace and its namespaced resources:
+
+```bash
+kubectl delete namespace <namespace>
+```
+
+## 5. Debugging and Logs
+
+### View pod logs
+
+Display the logs of a pod.
+
+```bash
+kubectl logs <pod-name> -n <namespace>
+```
+
+### Follow logs in real time
+
+Use `-f` (follow) to stream logs continuously.
+
+```bash
+kubectl logs -f <pod-name> -n <namespace>
+```
+
+### View previous container logs
+
+Useful when a container crashes or restarts.
+
+```bash
+kubectl logs <pod-name> --previous -n <namespace>
+```
+
+### Execute commands inside a container
+
+Open an interactive shell inside a pod.
+
+```bash
+kubectl exec -it <pod-name> -n <namespace> -- /bin/sh
+```
+
+Execute a single command inside a container:
+
+```bash
+kubectl exec <pod-name> -n <namespace> -- ls /
+```
+
+## 6. Resource Monitoring
+
+Monitor CPU and memory usage across nodes and pods.
+
+### Monitor nodes
+
+```bash
+kubectl top nodes
+```
+
+### Monitor pods in a namespace
+
+```bash
+kubectl top pods -n <namespace>
+```
+
+### Monitor pods across all namespaces
+
+```bash
+kubectl top pods -A
+```
+
+> **Note:** `kubectl top` requires the Kubernetes Metrics Server to be installed and running.
