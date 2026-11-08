@@ -1,3 +1,4 @@
 .vagrant/
 *.token
 node-token
+test-connect.sh

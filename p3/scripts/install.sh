@@ -49,11 +49,3 @@ else
   printf "${GREEN}k3d is already installed.${END}\n"
 fi
 
-
-if ! command -v argocd >/dev/null; then
-  printf "${BLUE}Installing ArgoCD...${END}\n"
-  sudo curl -fsSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-  sudo chmod +x /usr/local/bin/argocd
-else
-  printf "${GREEN}ArgoCD is already installed.${END}\n"
-fi
